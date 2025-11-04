@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72291259711",
+    "project_id": "time-boxer-9d654",
+    "storage_bucket": "time-boxer-9d654.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72291259711:android:e91c3be4a228117cccaf8a",
+        "android_client_info": {
+          "package_name": "awes0m.github.io.timeboxer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOQ9GBOOwVOv6v7i1jWM0OzO9Xkb8X9cI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
