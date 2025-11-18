@@ -63,11 +63,11 @@ class _AddTaskToTimeBoxDialogState
                     ? Theme.of(context)
                         .colorScheme
                         .primaryContainer
-                        .withOpacity(0.5)
+                        .withValues(alpha:0.5)
                     : Theme.of(context)
                         .colorScheme
                         .errorContainer
-                        .withOpacity(0.5),
+                        .withValues(alpha:0.5),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

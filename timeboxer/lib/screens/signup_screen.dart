@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/auth_service.dart';
-import '../services/sync_service.dart';
+import '../services/local_auth_service.dart';
+
 import 'home_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -33,15 +33,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
     setState(() => _isLoading = true);
 
-    try {
-      await ref.read(authServiceProvider).signUpWithEmailPassword(
+    try {      await ref.read(authServiceProvider).register(
             _emailController.text.trim(),
             _passwordController.text,
           );
-
-      // Enable cloud sync after successful signup
-      ref.read(syncServiceProvider).enableCloudSync();
-      ref.read(syncModeProvider.notifier).state = SyncMode.cloudSync;
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -103,7 +98,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.6),
+                                .withValues(alpha: 0.6),
                           ),
                       textAlign: TextAlign.center,
                     ),
@@ -217,7 +212,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         color: Theme.of(context)
                             .colorScheme
                             .primaryContainer
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(

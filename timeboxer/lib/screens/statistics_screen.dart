@@ -11,49 +11,67 @@ class StatisticsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allTasks = ref.watch(taskProvider);
-    final completedTasks =
-        allTasks.where((t) => t.status == TaskStatus.completed).toList();
+    final completedTasks = allTasks
+        .where((t) => t.status == TaskStatus.completed)
+        .toList();
 
     // Calculate statistics
     final totalTasks = allTasks.length;
+    final activeTasks = allTasks
+        .where((t) => t.status != TaskStatus.completed)
+        .length;
     final completedCount = completedTasks.length;
-    final completionRate =
-        totalTasks > 0 ? (completedCount / totalTasks * 100).toStringAsFixed(1) : '0';
+    final completionRate = totalTasks > 0
+        ? (completedCount / totalTasks * 100).toStringAsFixed(1)
+        : '0';
 
-    // Category breakdown
+    // Category breakdown (completed tasks only)
     final categoryStats = <TaskCategory, int>{};
     for (var category in TaskCategory.values) {
-      categoryStats[category] =
-          completedTasks.where((t) => t.category == category).length;
+      categoryStats[category] = completedTasks
+          .where((t) => t.category == category)
+          .length;
     }
 
-    // Time statistics
-    final totalPlannedTime = completedTasks.fold<int>(
+    // Time statistics (only for completed tasks with time data)
+    final tasksWithTime = completedTasks
+        .where((t) => t.timeBoxMinutes != null && t.actualTimeSpent != null)
+        .toList();
+
+    final totalPlannedTime = tasksWithTime.fold<int>(
       0,
       (sum, task) => sum + (task.timeBoxMinutes ?? 0),
     );
 
-    final totalActualTime = completedTasks.fold<int>(
+    final totalActualTime = tasksWithTime.fold<int>(
       0,
       (sum, task) => sum + (task.actualTimeSpent ?? 0),
     );
 
-    // Tasks per day (last 7 days)
+    // Tasks completed per day (last 7 days)
     final tasksPerDay = <DateTime, int>{};
     final now = DateTime.now();
     for (var i = 6; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       final dateKey = DateTime(date.year, date.month, date.day);
       tasksPerDay[dateKey] = completedTasks
-          .where((t) =>
-              DateUtils.isSameDay(t.createdAt, dateKey) ||
-              (t.scheduledDate != null && DateUtils.isSameDay(t.scheduledDate, dateKey)))
+          .where((t) => DateUtils.isSameDay(t.createdAt, dateKey))
           .length;
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistics'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () {
+              // Force rebuild
+              ref.invalidate(taskProvider);
+            },
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -63,9 +81,15 @@ class StatisticsScreen extends ConsumerWidget {
             context,
             totalTasks,
             completedCount,
+            activeTasks,
             completionRate,
-            totalPlannedTime,
           ),
+          const SizedBox(height: 24),
+
+          // Today's Summary
+          _buildSectionTitle(context, 'Today\'s Progress'),
+          const SizedBox(height: 16),
+          _buildTodaySummary(context, allTasks),
           const SizedBox(height: 24),
 
           // Category Breakdown
@@ -84,13 +108,69 @@ class StatisticsScreen extends ConsumerWidget {
           if (totalActualTime > 0) ...[
             _buildSectionTitle(context, 'Time Estimation Accuracy'),
             const SizedBox(height: 16),
-            _buildTimeAccuracyCard(
-              context,
-              totalPlannedTime,
-              totalActualTime,
-            ),
+            _buildTimeAccuracyCard(context, totalPlannedTime, totalActualTime),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildTodaySummary(BuildContext context, List<Task> allTasks) {
+    final today = DateTime.now();
+    final todayTasks = allTasks
+        .where(
+          (t) =>
+              t.scheduledDate != null &&
+              DateUtils.isSameDay(t.scheduledDate, today),
+        )
+        .toList();
+    final todayCompleted = todayTasks
+        .where((t) => t.status == TaskStatus.completed)
+        .length;
+    final todayTotal = todayTasks.length;
+    final todayProgress = todayTotal > 0 ? (todayCompleted / todayTotal) : 0.0;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$todayCompleted of $todayTotal tasks completed',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  '${(todayProgress * 100).toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: todayProgress,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            if (todayTasks.isEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'No tasks scheduled for today. Open Calendar View to plan your day!',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -99,39 +179,57 @@ class StatisticsScreen extends ConsumerWidget {
     BuildContext context,
     int total,
     int completed,
+    int active,
     String rate,
-    int totalTime,
   ) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildStatCard(
-            context,
-            'Total Tasks',
-            total.toString(),
-            Icons.task_alt,
-            Colors.blue,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                'Total Tasks',
+                total.toString(),
+                Icons.task_alt,
+                Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                'Active',
+                active.toString(),
+                Icons.pending_actions,
+                Colors.orange,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            'Completed',
-            completed.toString(),
-            Icons.check_circle,
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            context,
-            'Rate',
-            '$rate%',
-            Icons.trending_up,
-            Colors.orange,
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                context,
+                'Completed',
+                completed.toString(),
+                Icons.check_circle,
+                Colors.green,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                context,
+                'Completion',
+                '$rate%',
+                Icons.trending_up,
+                Colors.purple,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -154,9 +252,9 @@ class StatisticsScreen extends ConsumerWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -173,9 +271,9 @@ class StatisticsScreen extends ConsumerWidget {
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 
@@ -183,8 +281,11 @@ class StatisticsScreen extends ConsumerWidget {
     BuildContext context,
     Map<TaskCategory, int> categoryStats,
   ) {
-    final totalCount = categoryStats.values.fold<int>(0, (sum, count) => sum + count);
-    
+    final totalCount = categoryStats.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+
     if (totalCount == 0) {
       return Card(
         child: Padding(
@@ -193,8 +294,8 @@ class StatisticsScreen extends ConsumerWidget {
             child: Text(
               'No completed tasks yet',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                  ),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
             ),
           ),
         ),
@@ -206,7 +307,9 @@ class StatisticsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: categoryStats.entries.map((entry) {
-            final percentage = (entry.value / totalCount * 100).toStringAsFixed(1);
+            final percentage = (entry.value / totalCount * 100).toStringAsFixed(
+              1,
+            );
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
@@ -220,14 +323,12 @@ class StatisticsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(entry.key.displayName),
-                  ),
+                  Expanded(child: Text(entry.key.displayName)),
                   Text(
                     '${entry.value} ($percentage%)',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -270,8 +371,12 @@ class StatisticsScreen extends ConsumerWidget {
                     },
                   ),
                 ),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
               ),
               borderData: FlBorderData(show: true),
               lineBarsData: [
@@ -292,12 +397,8 @@ class StatisticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimeAccuracyCard(
-    BuildContext context,
-    int planned,
-    int actual,
-  ) {
-    // final accuracy = ((planned / actual) * 100).toStringAsFixed(1);
+  Widget _buildTimeAccuracyCard(BuildContext context, int planned, int actual) {
+    final accuracy = ((planned / actual) * 100).toStringAsFixed(1);
     final difference = planned - actual;
     final isUnder = difference < 0;
 
@@ -319,9 +420,9 @@ class StatisticsScreen extends ConsumerWidget {
                     Text(
                       '${planned ~/ 60}h ${planned % 60}m',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
                     ),
                   ],
                 ),
@@ -335,9 +436,9 @@ class StatisticsScreen extends ConsumerWidget {
                     Text(
                       '${actual ~/ 60}h ${actual % 60}m',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
                     ),
                   ],
                 ),
@@ -347,7 +448,9 @@ class StatisticsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (isUnder ? Colors.orange : Colors.green).withOpacity(0.1),
+                color: (isUnder ? Colors.orange : Colors.green).withValues(alpha: 
+                  0.1,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

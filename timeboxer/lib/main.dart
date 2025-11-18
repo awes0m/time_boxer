@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'models/models.dart';
 import 'screens/auth_wrapper.dart';
-import 'firebase_options.dart';
+import 'services/local_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Initialize Hive
   await Hive.initFlutter();
 
-  // Register adapters
   Hive.registerAdapter(TaskStatusAdapter());
   Hive.registerAdapter(TaskCategoryAdapter());
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(TimeBoxAdapter());
 
-  // Open boxes
   await Hive.openBox<Task>('tasks');
   await Hive.openBox<TimeBox>('timeboxes');
+
+  final authService = LocalAuthService();
+  await authService.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }

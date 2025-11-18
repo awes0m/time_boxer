@@ -14,7 +14,7 @@ class BacklogSection extends ConsumerWidget {
     return Container(
       color: Theme.of(
         context,
-      ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -63,7 +63,7 @@ class BacklogSection extends ConsumerWidget {
                           size: 64,
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.3),
+                          ).colorScheme.onSurface.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -72,7 +72,7 @@ class BacklogSection extends ConsumerWidget {
                               ?.copyWith(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.5),
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                         ),
                         const SizedBox(height: 8),
@@ -82,7 +82,7 @@ class BacklogSection extends ConsumerWidget {
                               ?.copyWith(
                                 color: Theme.of(
                                   context,
-                                ).colorScheme.onSurface.withOpacity(0.4),
+                                ).colorScheme.onSurface.withValues(alpha: .4),
                               ),
                         ),
                       ],

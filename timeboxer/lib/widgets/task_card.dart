@@ -63,7 +63,7 @@ class TaskCard extends ConsumerWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.4),
+                        .withValues(alpha: 0.4),
                   ),
                 ),
               Expanded(
@@ -79,7 +79,7 @@ class TaskCard extends ConsumerWidget {
                                 ? Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.5)
+                                    .withValues(alpha: 0.5)
                                 : null,
                           ),
                     ),
@@ -92,7 +92,7 @@ class TaskCard extends ConsumerWidget {
                               color: Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.6),
+                                  .withValues(alpha: 0.6),
                               decoration: isCompleted
                                   ? TextDecoration.lineThrough
                                   : null,
@@ -111,7 +111,7 @@ class TaskCard extends ConsumerWidget {
                             color: Theme.of(context)
                                 .colorScheme
                                 .primary
-                                .withOpacity(0.7),
+                                .withValues(alpha: 0.7),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -121,7 +121,7 @@ class TaskCard extends ConsumerWidget {
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primary
-                                          .withOpacity(0.7),
+                                          .withValues(alpha: 0.7),
                                       fontWeight: FontWeight.w500,
                                     ),
                           ),
@@ -136,7 +136,7 @@ class TaskCard extends ConsumerWidget {
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: onDelete,
                   color:
-                      Theme.of(context).colorScheme.error.withOpacity(0.7),
+                      Theme.of(context).colorScheme.error.withValues(alpha: 0.7),
                 ),
             ],
             ),

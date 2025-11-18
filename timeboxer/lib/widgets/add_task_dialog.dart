@@ -62,7 +62,7 @@ class _AddTaskDialogState extends ConsumerState<AddTaskDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<TaskCategory>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   border: OutlineInputBorder(),

@@ -126,6 +126,8 @@ class _QuickScheduleDialogState extends ConsumerState<QuickScheduleDialog> {
   }
 
   void _scheduleTask() {
+    if (_selectedTime == null) return;
+    
     final updatedTask = widget.task.copyWith(
       scheduledDate: _selectedDate,
       scheduledTime: _selectedTime,
@@ -134,5 +136,16 @@ class _QuickScheduleDialogState extends ConsumerState<QuickScheduleDialog> {
     );
     ref.read(taskProvider.notifier).updateTask(updatedTask);
     Navigator.of(context).pop();
+    
+    // Show confirmation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Task scheduled for ${_selectedTime!.format(context)} on ${_selectedDate.day}/${_selectedDate.month}',
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }

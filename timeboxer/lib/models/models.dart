@@ -129,6 +129,7 @@ class Task extends HiveObject {
     int? actualTimeSpent,
     DateTime? scheduledDate,
     TimeOfDay? scheduledTime,
+    bool clearScheduledTime = false,
   }) {
     return Task(
       id: id,
@@ -142,7 +143,9 @@ class Task extends HiveObject {
       category: category ?? this.category,
       actualTimeSpent: actualTimeSpent ?? this.actualTimeSpent,
       scheduledDate: scheduledDate ?? this.scheduledDate,
-      scheduledTime: scheduledTime ?? this.scheduledTime,
+      scheduledTime: clearScheduledTime
+          ? null
+          : (scheduledTime ?? this.scheduledTime),
     );
   }
 }

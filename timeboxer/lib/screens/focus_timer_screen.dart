@@ -146,7 +146,7 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: widget.task.category.color.withOpacity(0.1),
+                  color: widget.task.category.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: widget.task.category.color,
@@ -254,7 +254,7 @@ class _FocusTimerScreenState extends ConsumerState<FocusTimerScreen> {
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
-                  ).colorScheme.secondaryContainer.withOpacity(0.5),
+                  ).colorScheme.secondaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

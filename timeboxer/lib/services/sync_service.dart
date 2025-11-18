@@ -1,61 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/models.dart';
-import 'firestore_service.dart';
 
-enum SyncMode { localOnly, cloudSync }
+enum SyncMode { localOnly }
 
 class SyncService {
-  final FirestoreService _firestoreService;
-  SyncMode _syncMode = SyncMode.localOnly;
+  final SyncMode _syncMode = SyncMode.localOnly;
 
-  SyncService(this._firestoreService);
+  SyncService();
 
   SyncMode get syncMode => _syncMode;
-
-  // Enable cloud sync
-  void enableCloudSync() {
-    _syncMode = SyncMode.cloudSync;
-  }
-
-  // Disable cloud sync (use local only)
-  void disableCloudSync() {
-    _syncMode = SyncMode.localOnly;
-  }
-
-  // Sync local Hive data to Firestore
-  Future<void> syncLocalToCloud(String userId) async {
-    final taskBox = Hive.box<Task>('tasks');
-    final timeBoxBox = Hive.box<TimeBox>('timeboxes');
-
-    final tasks = taskBox.values.toList();
-    final timeBoxes = timeBoxBox.values.toList();
-
-    await _firestoreService.syncToFirestore(userId, tasks, timeBoxes);
-  }
-
-  // Sync Firestore data to local Hive
-  Future<void> syncCloudToLocal(
-    String userId,
-    List<Task> cloudTasks,
-    List<TimeBox> cloudTimeBoxes,
-  ) async {
-    final taskBox = Hive.box<Task>('tasks');
-    final timeBoxBox = Hive.box<TimeBox>('timeboxes');
-
-    // Clear local data
-    await taskBox.clear();
-    await timeBoxBox.clear();
-
-    // Add cloud data to local
-    for (final task in cloudTasks) {
-      await taskBox.put(task.id, task);
-    }
-
-    for (final timeBox in cloudTimeBoxes) {
-      await timeBoxBox.put(timeBox.id, timeBox);
-    }
-  }
 
   // Clear all local data
   Future<void> clearLocalData() async {
@@ -73,20 +27,25 @@ class SyncService {
 
     return taskBox.isNotEmpty || timeBoxBox.isNotEmpty;
   }
-}
 
-// Provider for FirestoreService
-final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  return FirestoreService();
-});
+  // Get local data count
+  Map<String, int> getLocalDataCount() {
+    final taskBox = Hive.box<Task>('tasks');
+    final timeBoxBox = Hive.box<TimeBox>('timeboxes');
+
+    return {
+      'tasks': taskBox.length,
+      'timeboxes': timeBoxBox.length,
+    };
+  }
+}
 
 // Provider for SyncService
 final syncServiceProvider = Provider<SyncService>((ref) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return SyncService(firestoreService);
+  return SyncService();
 });
 
 // Provider for sync mode
-final syncModeProvider = StateProvider<SyncMode>((ref) {
+final syncModeProvider = Provider<SyncMode>((ref) {
   return SyncMode.localOnly;
 });

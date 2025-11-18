@@ -64,7 +64,7 @@ class TimeBoxSection extends ConsumerWidget {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.3),
+                              .withValues(alpha:0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -76,7 +76,7 @@ class TimeBoxSection extends ConsumerWidget {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.5),
+                                    .withValues(alpha:0.5),
                               ),
                         ),
                         const SizedBox(height: 8),
@@ -86,7 +86,7 @@ class TimeBoxSection extends ConsumerWidget {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withOpacity(0.4),
+                                    .withValues(alpha:0.4),
                               ),
                         ),
                       ],

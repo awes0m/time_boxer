@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 import '../providers/timebox_provider.dart';
 import '../providers/task_provider.dart';
+import '../screens/focus_timer_screen.dart';
 import 'task_card.dart';
 import 'add_task_to_timebox_dialog.dart';
 
@@ -124,7 +125,7 @@ class TimeBoxCard extends ConsumerWidget {
                       ? Theme.of(context)
                           .colorScheme
                           .primaryContainer
-                          .withOpacity(0.3)
+                          .withValues(alpha: 0.3)
                       : null,
                   border: isDragOver
                       ? Border.all(
@@ -149,7 +150,7 @@ class TimeBoxCard extends ConsumerWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurface
-                                      .withOpacity(0.5),
+                                      .withValues(alpha:0.5),
                                 ),
                           ),
                         ),
@@ -170,18 +171,39 @@ class TimeBoxCard extends ConsumerWidget {
                         },
                         itemBuilder: (context, index) {
                           final task = tasks[index];
-                          return TaskCard(
+                          return Row(
                             key: ValueKey(task.id),
-                            task: task,
-                            showCheckbox: true,
-                            onDelete: () {
-                              ref
-                                  .read(timeBoxProvider.notifier)
-                                  .removeTaskFromTimeBox(timeBox.id, task.id);
-                              ref
-                                  .read(taskProvider.notifier)
-                                  .moveTaskToBacklog(task.id);
-                            },
+                            children: [
+                              Expanded(
+                                child: TaskCard(
+                                  task: task,
+                                  showCheckbox: true,
+                                  onDelete: () {
+                                    ref
+                                        .read(timeBoxProvider.notifier)
+                                        .removeTaskFromTimeBox(
+                                            timeBox.id, task.id);
+                                    ref
+                                        .read(taskProvider.notifier)
+                                        .moveTaskToBacklog(task.id);
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.timer),
+                                tooltip: 'Start Focus Timer',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          FocusTimerScreen(task: task),
+                                    ),
+                                  );
+                                },
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ],
                           );
                         },
                       ),

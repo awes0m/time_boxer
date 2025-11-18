@@ -1,14 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/models.dart';
-import '../services/auth_service.dart';
-import '../services/sync_service.dart';
+import '../services/local_storage_service.dart';
 
 class TaskNotifier extends StateNotifier<List<Task>> {
   final Box<Task> _taskBox;
+  final LocalStorageService _localStorageService;
   final Ref ref;
 
-  TaskNotifier(this._taskBox, this.ref) : super([]) {
+  TaskNotifier(this._taskBox, this._localStorageService, this.ref) : super([]) {
     _loadTasks();
   }
 
@@ -27,48 +28,40 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       status: TaskStatus.backlog,
       category: category,
     );
-    
-    // Save to local
+
     await _taskBox.put(task.id, task);
+    await _localStorageService.addTask(task);
     _loadTasks();
-    
-    // Sync to cloud if enabled
-    await _syncToCloud(task);
   }
 
   Future<void> updateTask(Task updatedTask) async {
-    // Update local
     await _taskBox.put(updatedTask.id, updatedTask);
+    await _localStorageService.updateTask(updatedTask);
     _loadTasks();
-    
-    // Sync to cloud if enabled
-    await _syncToCloud(updatedTask);
   }
 
   Future<void> deleteTask(String taskId) async {
-    // Delete from local
     await _taskBox.delete(taskId);
+    await _localStorageService.deleteTask(taskId);
     _loadTasks();
-    
-    // Delete from cloud if enabled
-    final syncMode = ref.read(syncModeProvider);
-    if (syncMode == SyncMode.cloudSync) {
-      final userId = ref.read(userIdProvider);
-      if (userId != null) {
-        final firestoreService = ref.read(firestoreServiceProvider);
-        await firestoreService.deleteTask(userId, taskId);
-      }
-    }
   }
 
   Future<void> moveTaskToBacklog(String taskId) async {
     final task = _taskBox.get(taskId);
     if (task != null) {
-      final updatedTask = task.copyWith(
+      final updatedTask = Task(
+        id: task.id,
+        title: task.title,
+        description: task.description,
         status: TaskStatus.backlog,
+        createdAt: task.createdAt,
         timeBoxMinutes: null,
         orderIndex: null,
         timeBoxId: null,
+        category: task.category,
+        actualTimeSpent: task.actualTimeSpent,
+        scheduledDate: null,
+        scheduledTime: null,
       );
       await updateTask(updatedTask);
     }
@@ -85,38 +78,15 @@ class TaskNotifier extends StateNotifier<List<Task>> {
       await updateTask(updatedTask);
     }
   }
-
-  Future<void> _syncToCloud(Task task) async {
-    final syncMode = ref.read(syncModeProvider);
-    if (syncMode == SyncMode.cloudSync) {
-      final userId = ref.read(userIdProvider);
-      if (userId != null) {
-        final firestoreService = ref.read(firestoreServiceProvider);
-        await firestoreService.addTask(userId, task);
-      }
-    }
-  }
-
-  // Load tasks from Firestore
-  Future<void> loadFromFirestore(String userId) async {
-    final firestoreService = ref.read(firestoreServiceProvider);
-    final stream = firestoreService.getTasks(userId);
-    
-    await for (final tasks in stream.take(1)) {
-      // Clear local and add cloud tasks
-      await _taskBox.clear();
-      for (final task in tasks) {
-        await _taskBox.put(task.id, task);
-      }
-      _loadTasks();
-      break;
-    }
-  }
 }
+
+final localStorageServiceProvider = 
+    Provider<LocalStorageService>((ref) => LocalStorageService());
 
 final taskProvider = StateNotifierProvider<TaskNotifier, List<Task>>((ref) {
   final taskBox = Hive.box<Task>('tasks');
-  return TaskNotifier(taskBox, ref);
+  final localStorageService = ref.watch(localStorageServiceProvider);
+  return TaskNotifier(taskBox, localStorageService, ref);
 });
 
 final backlogTasksProvider = Provider<List<Task>>((ref) {
